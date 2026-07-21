@@ -13,6 +13,7 @@ def list_books(
     per_page: int = 20,
     author: str | None = None,
     q: str | None = None,
+    is_done: bool | None = None,
 ) -> tuple[list[Book], int]:
     """Return a page of books plus the total count matching the filters."""
     filters = []
@@ -20,6 +21,8 @@ def list_books(
         filters.append(Book.author.ilike(f"%{author}%"))
     if q:
         filters.append(Book.title.ilike(f"%{q}%"))
+    if is_done is not None:
+        filters.append(Book.is_done.is_(is_done))
 
     total = db.scalar(select(func.count()).select_from(Book).where(*filters)) or 0
 

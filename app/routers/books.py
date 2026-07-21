@@ -15,10 +15,11 @@ def list_books(
     per_page: int = Query(20, ge=1, le=100),
     author: str | None = Query(None, description="Filter by author (partial match)"),
     q: str | None = Query(None, description="Search in title (partial match)"),
+    is_done: bool | None = Query(None, description="Filter by completion status"),
     db: Session = Depends(get_db),
 ) -> ListResponse[BookRead]:
     books, total = book_service.list_books(
-        db, page=page, per_page=per_page, author=author, q=q
+        db, page=page, per_page=per_page, author=author, q=q, is_done=is_done
     )
     return ListResponse[BookRead](
         data=[BookRead.model_validate(b) for b in books],
