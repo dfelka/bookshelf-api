@@ -27,36 +27,70 @@ A production-ready backend REST API for managing a bookstore inventory. The proj
 | CI/CD            | GitHub Actions           |
 | Deployment       | Render / Railway         |
 
+## Getting Started
+
+### Run with Docker (recommended)
+
+The whole stack — the API plus a PostgreSQL 16 database — runs with one command.
+On startup the app container applies Alembic migrations and then launches the server.
+
+```bash
+docker compose up --build
+```
+
+- API: http://localhost:8000
+- Interactive docs (Swagger UI): http://localhost:8000/docs
+- Health check: http://localhost:8000/health
+
+Stop the stack (containers only) with `docker compose down`, or
+`docker compose down -v` to also drop the database volume.
+
+### Run locally (without Docker)
+
+Requires Python 3.12+ and a reachable PostgreSQL instance.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+cp .env.example .env             # then edit DATABASE_URL if needed
+alembic upgrade head             # create the books table
+uvicorn app.main:app --reload    # auto-docs at /docs
+```
+
 ## Project Structure
 
 ```
-my-api/
+bookshelf-api/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI app entry point
+│   ├── main.py              # FastAPI app + error-envelope handlers
 │   ├── config.py            # Settings via environment variables
 │   ├── database.py          # DB engine, session, Base
+│   ├── errors.py            # Domain exceptions (NotFound, Conflict, ...)
 │   ├── models/              # SQLAlchemy table models
 │   │   ├── __init__.py
-│   │   └── item.py          # Example: Item model
+│   │   └── book.py          # Book model
 │   ├── schemas/             # Pydantic request/response schemas
 │   │   ├── __init__.py
-│   │   └── item.py
+│   │   ├── book.py
+│   │   └── common.py        # Data / list / error envelopes
 │   ├── routers/             # Route handlers grouped by resource
 │   │   ├── __init__.py
-│   │   └── items.py
+│   │   ├── health.py
+│   │   └── books.py
 │   └── services/            # Business logic (keeps routers thin)
 │       ├── __init__.py
-│       └── item_service.py
-├── tests/
-│   ├── conftest.py          # Shared fixtures (test DB, client)
-│   ├── test_items.py        # Integration tests for /items
-│   └── test_item_service.py # Unit tests for business logic
+│       └── book_service.py
 ├── alembic/                 # Database migrations
+│   ├── env.py
 │   └── versions/
+│       └── 0001_initial.py
 ├── alembic.ini
 ├── Dockerfile
 ├── docker-compose.yml
+├── .dockerignore
 ├── requirements.txt
 ├── .env.example             # Template for environment variables
 ├── .gitignore
@@ -84,28 +118,40 @@ Request flow: Client → Router (endpoint) → Service (logic) → ORM (database
 ## Database Schema
 
 ```sql
--- Example: Items table (replace with your domain)
-CREATE TABLE items (
+CREATE TABLE books (
     id          SERIAL PRIMARY KEY,
     title       VARCHAR(200)  NOT NULL,
+    author      VARCHAR(200),
     description TEXT,
     is_done     BOOLEAN       NOT NULL DEFAULT FALSE,
     created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
-
--- Add more tables below as your project grows
--- CREATE TABLE users ( ... );
 ```
-
 
 ## CRUD Endpoints
 
-| Method   | Path            | Description              | Request Body              | Response         |
-|----------|-----------------|--------------------------|---------------------------|------------------|
-| `GET`    | `/health`       | Health check             | —                         | `{ status: ok }` |
-| `GET`    | `/items`        | List items (paginated)   | —                         | `Item[]`         |
-| `GET`    | `/items/{id}`   | Get single item          | —                         | `Item`           |
-| `POST`   | `/items`        | Create new item          | `{ title, description }`  | `Item`           |
-| `PATCH`  | `/items/{id}`   | Update item              | partial `Item` fields     | `Item`           |
-| `DELETE` | `/items/{id}`   | Delete item              | —                         | `204 No Content` |
+| Method   | Path            | Description                        | Request Body                | Response         |
+|----------|-----------------|-----------------------------------|-----------------------------|------------------|
+| `GET`    | `/health`       | Health check                      | —                           | `{ status: ok }` |
+| `GET`    | `/books`        | List books (paginated, filterable)| —                           | `Book[]`         |
+| `GET`    | `/books/{id}`   | Get single book                   | —                           | `Book`           |
+| `POST`   | `/books`        | Create new book                   | `{ title, author, ... }`    | `Book`           |
+| `PATCH`  | `/books/{id}`   | Update book (partial)             | partial `Book` fields       | `Book`           |
+| `DELETE` | `/books/{id}`   | Delete book                       | —                           | `204 No Content` |
+
+List query parameters: `page` (default 1), `per_page` (default 20, max 100),
+`author` (partial match), `q` (search in title).
+
+### Response Envelopes
+
+```json
+// Single resource
+{ "data": { "id": 1, "title": "...", "author": "...", "is_done": false, ... } }
+
+// Paginated list
+{ "data": [ ... ], "meta": { "page": 1, "per_page": 20, "total": 57 } }
+
+// Error
+{ "error": { "code": "NOT_FOUND", "message": "Book with id 99 not found" } }
+```

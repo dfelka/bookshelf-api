@@ -1,22 +1,15 @@
-# Project context (kept local)
-context/
-CLAUDE.md
+# Version control
+.git
+.gitignore
 
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
-build/
-dist/
-
-# Virtual environments
 .venv/
 venv/
 env/
-
-# Environment / secrets
-.env
 
 # Test & tooling caches
 .pytest_cache/
@@ -26,8 +19,13 @@ htmlcov/
 .coverage
 .coverage.*
 
-# Editor / OS
+# Local env / secrets
+.env
+
+# Editor / OS cruft
 .vscode/
 .idea/
 .DS_Store
-Thumbs.db
+
+# Docs / context not needed in the image
+context/
