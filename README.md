@@ -131,27 +131,11 @@ CREATE TABLE books (
 
 ## CRUD Endpoints
 
-| Method   | Path            | Description                        | Request Body                | Response         |
-|----------|-----------------|-----------------------------------|-----------------------------|------------------|
-| `GET`    | `/health`       | Health check                      | —                           | `{ status: ok }` |
-| `GET`    | `/books`        | List books (paginated, filterable)| —                           | `Book[]`         |
-| `GET`    | `/books/{id}`   | Get single book                   | —                           | `Book`           |
-| `POST`   | `/books`        | Create new book                   | `{ title, author, ... }`    | `Book`           |
-| `PATCH`  | `/books/{id}`   | Update book (partial)             | partial `Book` fields       | `Book`           |
-| `DELETE` | `/books/{id}`   | Delete book                       | —                           | `204 No Content` |
-
-List query parameters: `page` (default 1), `per_page` (default 20, max 100),
-`author` (partial match), `q` (search in title).
-
-### Response Envelopes
-
-```json
-// Single resource
-{ "data": { "id": 1, "title": "...", "author": "...", "is_done": false, ... } }
-
-// Paginated list
-{ "data": [ ... ], "meta": { "page": 1, "per_page": 20, "total": 57 } }
-
-// Error
-{ "error": { "code": "NOT_FOUND", "message": "Book with id 99 not found" } }
-```
+| Method   | Path            | Description                        |
+|----------|-----------------|-----------------------------------|
+| `GET`    | `/health`       | Health check                      |
+| `GET`    | `/books`        | List books (paginated, filterable)|
+| `GET`    | `/books/{id}`   | Get single book                   |
+| `POST`   | `/books`        | Create new book                   |
+| `PATCH`  | `/books/{id}`   | Update book (partial)             |
+| `DELETE` | `/books/{id}`   | Delete book                       |
