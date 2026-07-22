@@ -106,7 +106,8 @@ bookshelf-api/
 │   ├── conftest.py          # In-memory DB + TestClient fixtures
 │   ├── test_book_service.py # Unit tests for the service layer
 │   ├── test_books.py        # Integration tests for /books
-│   └── test_health.py       # Health-check test
+│   ├── test_health.py       # Health-check test
+│   └── test_root.py         # Root metadata endpoint test
 ├── alembic/                 # Database migrations
 │   ├── env.py
 │   └── versions/
