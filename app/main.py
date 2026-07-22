@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import get_redoc_html
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
@@ -13,7 +14,23 @@ app = FastAPI(
     title=settings.app_name,
     description="A production-ready REST API for managing a bookstore inventory.",
     version="0.1.0",
+    # Disable the built-in ReDoc route; its default CDN tag (redoc@next) is
+    # unpublished (404) and renders blank. A pinned bundle is served below.
+    redoc_url=None,
 )
+
+# Serve ReDoc from a pinned, stable bundle instead of the broken default.
+REDOC_JS_URL = "https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js"
+
+
+@app.get("/redoc", include_in_schema=False)
+def redoc_html() -> HTMLResponse:
+    """ReDoc docs page, loaded from a pinned CDN bundle."""
+    return get_redoc_html(
+        openapi_url=app.openapi_url or "/openapi.json",
+        title=f"{app.title} - ReDoc",
+        redoc_js_url=REDOC_JS_URL,
+    )
 
 
 def _error_response(status_code: int, code: str, message: str) -> JSONResponse:
