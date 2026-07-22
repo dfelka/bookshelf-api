@@ -15,4 +15,7 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Apply migrations, then start the API. Bind to $PORT when the host provides one
+# (e.g. Render), otherwise default to 8000 for local runs. docker-compose
+# overrides this command with its own, so local dev is unaffected.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

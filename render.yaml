@@ -1,0 +1,29 @@
+# Render Blueprint — infrastructure as code for this API.
+# Spec: https://render.com/docs/blueprint-spec
+#
+# To deploy: Render Dashboard -> New -> Blueprint -> connect this repo.
+# Render reads this file, provisions the Postgres database and the web service,
+# and injects DATABASE_URL automatically (see envVars below).
+
+databases:
+  - name: bookshelf-db
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: bookshelf-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true # redeploy on every push to the connected branch
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bookshelf-db
+          property: connectionString
+      - key: APP_NAME
+        value: Bookshelf API
+      - key: DEBUG
+        value: "false"
