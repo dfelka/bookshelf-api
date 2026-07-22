@@ -51,5 +51,16 @@ async def handle_validation_error(
     )
 
 
+@app.get("/", tags=["meta"])
+def root() -> dict[str, str]:
+    """API metadata and quick links to the docs and health check."""
+    return {
+        "name": settings.app_name,
+        "version": app.version,
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 app.include_router(health.router)
 app.include_router(books.router)
