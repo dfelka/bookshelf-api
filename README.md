@@ -59,6 +59,25 @@ alembic upgrade head             # create the books table
 uvicorn app.main:app --reload    # auto-docs at /docs
 ```
 
+### Testing
+
+The suite runs entirely against an in-memory SQLite database, so no Postgres
+(or `psycopg2`) is required — just the app plus the test tools:
+
+```bash
+python -m venv .venv
+.venv\Scripts\Activate.ps1        # Windows PowerShell
+pip install fastapi sqlalchemy pydantic pydantic-settings pytest httpx pytest-cov
+
+pytest                                       # all tests
+pytest -v                                    # verbose
+pytest --cov=app --cov-report=term-missing   # with coverage (currently 96%)
+```
+
+> On Python 3.12 you can instead `pip install -r requirements-dev.txt`.
+> The explicit list above avoids the `psycopg2-binary` build, which has no
+> wheel for newer Python versions on Windows and isn't needed for the tests.
+
 ## Project Structure
 
 ```
@@ -83,6 +102,11 @@ bookshelf-api/
 │   └── services/            # Business logic (keeps routers thin)
 │       ├── __init__.py
 │       └── book_service.py
+├── tests/                   # Test suite (pytest)
+│   ├── conftest.py          # In-memory DB + TestClient fixtures
+│   ├── test_book_service.py # Unit tests for the service layer
+│   ├── test_books.py        # Integration tests for /books
+│   └── test_health.py       # Health-check test
 ├── alembic/                 # Database migrations
 │   ├── env.py
 │   └── versions/
@@ -91,7 +115,9 @@ bookshelf-api/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .dockerignore
+├── pytest.ini
 ├── requirements.txt
+├── requirements-dev.txt     # Test/dev deps (pytest, httpx, pytest-cov)
 ├── .env.example             # Template for environment variables
 ├── .gitignore
 └── README.md
