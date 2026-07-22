@@ -1,19 +1,27 @@
 # Bookshelf API
 
 [![CI](https://github.com/dfelka/bookshelf-api/actions/workflows/ci.yml/badge.svg)](https://github.com/dfelka/bookshelf-api/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/live-demo-brightgreen)](https://bookshelf-api-oyxn.onrender.com/docs)
+![Python](https://img.shields.io/badge/python-3.12%2B-blue)
+![Code style: black](https://img.shields.io/badge/code%20style-black-000000)
+![Lint: ruff](https://img.shields.io/badge/lint-ruff-261230)
 
 A production-ready backend REST API for managing a bookstore inventory. The project demonstrates the full backend lifecycle: schema design, containerization, testing, CI/CD, cloud deployment, and documentation.
 
+**Live demo:** <https://bookshelf-api-oyxn.onrender.com> — interactive API docs at [`/docs`](https://bookshelf-api-oyxn.onrender.com/docs).
+_Hosted on Render's free tier, so the first request after a period of inactivity may take ~30–60s to wake._
+
 ## Features
 
-- Full CRUD for the primary resource
-- Input validation and error handling
-- Pagination and filtering on list endpoints
-- Health-check endpoint (`GET /health`)
-- Dockerized local development
-- Automated test suite and CI/CD pipeline via GitHub Actions
-- Cloud deployment
-- User registration and authentication *(optional)*
+- Full CRUD for books, with Pydantic input validation and structured error envelopes
+- Pagination and filtering on the list endpoint (title search, author, completion status)
+- Health-check (`GET /health`) and root metadata (`GET /`) endpoints
+- Auto-generated interactive API docs (Swagger UI at `/docs`, ReDoc at `/redoc`)
+- Dockerized local development (app + PostgreSQL via `docker compose`)
+- Automated test suite (pytest, ~96% coverage) with CI via GitHub Actions
+- Deployed to the cloud (Render) with a managed PostgreSQL database
+
+> Authentication is intentionally out of scope for v1 — this is a public, read/write demo API.
 
 ## Tech Stack
 
@@ -27,7 +35,7 @@ A production-ready backend REST API for managing a bookstore inventory. The proj
 | Testing          | pytest + httpx           |
 | Containerization | Docker + docker-compose  |
 | CI/CD            | GitHub Actions           |
-| Deployment       | Render / Railway         |
+| Deployment       | Render (Docker) + managed PostgreSQL |
 
 ## Getting Started
 
@@ -129,6 +137,7 @@ bookshelf-api/
 │   ├── conftest.py          # In-memory DB + TestClient fixtures
 │   ├── test_book_service.py # Unit tests for the service layer
 │   ├── test_books.py        # Integration tests for /books
+│   ├── test_docs.py         # Docs endpoints (/docs, /redoc, /openapi.json)
 │   ├── test_health.py       # Health-check test
 │   └── test_root.py         # Root metadata endpoint test
 ├── alembic/                 # Database migrations
@@ -152,23 +161,28 @@ bookshelf-api/
 └── README.md
 ```
 
-## Architecture Diagram
+## Architecture
 
-```
-┌────────────┐       ┌─────────────────────────────────────────┐
-│            │  HTTP │  FastAPI Application                    │
-│   Client   │◄─────►│                                         │
-│ (Postman / │       │  ┌──────────┐  ┌──────────┐  ┌───────┐  │     ┌────────────┐
-│  curl /    │       │  │  Router  │─►│ Service  │─►│  ORM  │──┼────►│ PostgreSQL │
-│  browser)  │       │  └──────────┘  └──────────┘  └───────┘  │     └────────────┘
-│            │       │       ▲                                 │
-└────────────┘       │  ┌────┴─────┐                           │
-                     │  │ Pydantic │  (validates in/out)       │
-                     │  └──────────┘                           │
-                     └─────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    Client["Client<br/>(curl / browser / Postman)"]
+
+    subgraph App["FastAPI application"]
+        direction LR
+        Router["Router<br/>(endpoints)"]
+        Service["Service<br/>(business logic)"]
+        ORM["ORM<br/>(SQLAlchemy)"]
+        Pydantic["Pydantic<br/>(validation in / out)"]
+        Router --> Service --> ORM
+        Pydantic -.-> Router
+    end
+
+    Client -->|HTTP| Router
+    ORM -->|SQL| DB[("PostgreSQL")]
 ```
 
-Request flow: Client → Router (endpoint) → Service (logic) → ORM (database) → PostgreSQL
+Request flow: **Client → Router (endpoint) → Service (logic) → ORM (database) → PostgreSQL.**
+Routers stay thin; business logic lives in the service layer; Pydantic validates every request and response.
 
 ## Database Schema
 
@@ -184,13 +198,67 @@ CREATE TABLE books (
 );
 ```
 
-## CRUD Endpoints
+## API Reference
 
-| Method   | Path            | Description                        |
-|----------|-----------------|-----------------------------------|
-| `GET`    | `/health`       | Health check                      |
-| `GET`    | `/books`        | List books (paginated, filterable)|
-| `GET`    | `/books/{id}`   | Get single book                   |
-| `POST`   | `/books`        | Create new book                   |
-| `PATCH`  | `/books/{id}`   | Update book (partial)             |
-| `DELETE` | `/books/{id}`   | Delete book                       |
+The full, interactive spec is auto-generated by FastAPI and always in sync with the code:
+
+- **Live:** <https://bookshelf-api-oyxn.onrender.com/docs>
+- **Local:** http://localhost:8000/docs (Swagger UI) · http://localhost:8000/redoc (ReDoc) · `/openapi.json` (raw spec)
+
+### Endpoints
+
+| Method   | Path            | Description                         | Success |
+|----------|-----------------|-------------------------------------|---------|
+| `GET`    | `/`             | API metadata + links                | `200`   |
+| `GET`    | `/health`       | Health check                        | `200`   |
+| `GET`    | `/books`        | List books (paginated, filterable)  | `200`   |
+| `GET`    | `/books/{id}`   | Get a single book                   | `200`   |
+| `POST`   | `/books`        | Create a book                       | `201`   |
+| `PATCH`  | `/books/{id}`   | Update a book (partial)             | `200`   |
+| `DELETE` | `/books/{id}`   | Delete a book                       | `204`   |
+
+`GET /books` supports pagination and filtering — e.g. `GET /books?q=dune&is_done=false&per_page=5`.
+See the [interactive docs](https://bookshelf-api-oyxn.onrender.com/docs) for the full list of query
+parameters, request/response schemas, and per-endpoint status codes — it's generated from the code
+and always current.
+
+### Response envelopes
+
+```jsonc
+// Single resource
+{ "data": { "id": 1, "title": "Dune", "author": "Frank Herbert", "is_done": false, ... } }
+
+// Collection (paginated)
+{ "data": [ ... ], "meta": { "page": 1, "per_page": 20, "total": 57 } }
+
+// Error
+{ "error": { "code": "NOT_FOUND", "message": "Book with id 99 not found" } }
+```
+
+## Contributing
+
+Setup for new contributors:
+
+```bash
+git clone https://github.com/dfelka/bookshelf-api.git
+cd bookshelf-api
+
+python -m venv .venv
+source .venv/bin/activate         # Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt   # on Python 3.12; see Testing for the 3.14 note
+```
+
+Before opening a pull request, run the same checks CI does:
+
+```bash
+ruff check .        # lint
+black --check .     # formatting
+pytest              # tests
+```
+
+Workflow:
+
+- Branch from `main` (e.g. `feat/…`, `fix/…`, `docs/…`).
+- Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `test:`, `docs:`, `chore:`).
+- Open a PR — CI (lint + format + tests + Docker build) must pass before merge.
+- Merging to `main` auto-deploys to Render.
