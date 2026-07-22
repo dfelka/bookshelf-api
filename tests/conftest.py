@@ -17,11 +17,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
+from app.main import app
 
 # Importing the model registers the `books` table on Base.metadata so that
 # create_all() below knows about it.
 from app.models.book import Book  # noqa: F401
-from app.main import app
 
 
 @pytest.fixture

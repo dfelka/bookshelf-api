@@ -3,3 +3,5 @@
 pytest==8.3.4
 httpx==0.28.1
 pytest-cov==6.0.0
+ruff==0.15.22
+black==26.5.1
