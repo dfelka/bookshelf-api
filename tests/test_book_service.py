@@ -13,7 +13,6 @@ from app.errors import NotFoundError
 from app.schemas.book import BookCreate, BookUpdate
 from app.services import book_service
 
-
 # --------------------------------------------------------------------------- #
 # Error paths — mocked session                                                #
 # --------------------------------------------------------------------------- #
@@ -81,9 +80,7 @@ def test_update_book_only_changes_sent_fields(db_session) -> None:
         db_session, BookCreate(title="Original", author="Author")
     )
 
-    updated = book_service.update_book(
-        db_session, created.id, BookUpdate(is_done=True)
-    )
+    updated = book_service.update_book(db_session, created.id, BookUpdate(is_done=True))
 
     assert updated.is_done is True
     assert updated.title == "Original"  # untouched

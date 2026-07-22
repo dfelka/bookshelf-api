@@ -28,9 +28,7 @@ def list_books(
 
 
 @router.get("/{book_id}", response_model=DataResponse[BookRead])
-def get_book(
-    book_id: int, db: Session = Depends(get_db)
-) -> DataResponse[BookRead]:
+def get_book(book_id: int, db: Session = Depends(get_db)) -> DataResponse[BookRead]:
     book = book_service.get_book(db, book_id)
     return DataResponse[BookRead](data=BookRead.model_validate(book))
 

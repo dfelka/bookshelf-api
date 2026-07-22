@@ -1,0 +1,23 @@
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, UP: pyupgrade, B: flake8-bugbear
+select = ["E", "W", "F", "I", "UP", "B"]
+# UP046: keep explicit `Generic[T]` for the Pydantic response-envelope models —
+# broadly compatible and clearer than PEP 695 syntax for this codebase.
+ignore = ["UP046"]
+
+[tool.ruff.lint.flake8-bugbear]
+# `Depends`/`Query` calls in argument defaults are the intended FastAPI idiom,
+# not the mutable-default bug B008 is meant to catch.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test fixtures import models purely for their registration side effects.
+"tests/conftest.py" = ["F401"]

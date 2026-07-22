@@ -1,5 +1,7 @@
 # Bookshelf API
 
+[![CI](https://github.com/dfelka/bookshelf-api/actions/workflows/ci.yml/badge.svg)](https://github.com/dfelka/bookshelf-api/actions/workflows/ci.yml)
+
 A production-ready backend REST API for managing a bookstore inventory. The project demonstrates the full backend lifecycle: schema design, containerization, testing, CI/CD, cloud deployment, and documentation.
 
 ## Features
@@ -78,6 +80,27 @@ pytest --cov=app --cov-report=term-missing   # with coverage (currently 96%)
 > The explicit list above avoids the `psycopg2-binary` build, which has no
 > wheel for newer Python versions on Windows and isn't needed for the tests.
 
+### Linting & formatting
+
+```bash
+ruff check .     # lint (add --fix to auto-fix)
+black .          # format (use --check in CI to verify without editing)
+```
+
+Configuration lives in `pyproject.toml`.
+
+## Continuous Integration
+
+Every push and pull request to `main` runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+
+1. **Lint** — `ruff check .`
+2. **Format check** — `black --check .`
+3. **Tests** — `pytest` with coverage
+4. **Docker build** — builds the image to confirm it still assembles
+
+A green badge at the top of this README reflects the latest run on `main`.
+Deployment is handled separately by Render's auto-deploy on push to `main`.
+
 ## Project Structure
 
 ```
@@ -112,13 +135,18 @@ bookshelf-api/
 │   ├── env.py
 │   └── versions/
 │       └── 0001_initial.py
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # GitHub Actions: lint, test, docker build
 ├── alembic.ini
 ├── Dockerfile
 ├── docker-compose.yml
+├── render.yaml              # Render Blueprint (web service + Postgres)
 ├── .dockerignore
+├── pyproject.toml           # ruff + black configuration
 ├── pytest.ini
 ├── requirements.txt
-├── requirements-dev.txt     # Test/dev deps (pytest, httpx, pytest-cov)
+├── requirements-dev.txt     # Test/dev deps (pytest, httpx, ruff, black, ...)
 ├── .env.example             # Template for environment variables
 ├── .gitignore
 └── README.md
